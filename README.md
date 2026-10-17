@@ -19,3 +19,8 @@
 ## 排序
 
 用户自己的 RSS/收藏源在打分时有小幅加权（+0.6，或簇内含用户源 +0.3），各类别配额不变，不会挤掉覆盖面。来源归属（user/added）只写到本地未跟踪的 `data/origin-stats-*.json`，不进入公开数据。
+
+## 每日反馈
+
+- 页面底部「提交反馈到 GitHub ↗」打开预填 issue（标题 `feedback: YYYY-MM-DD`），正文为紧凑 JSON：只含打开过/点过原文/写了备注的条目、统计和分类计数。URL 超过约 7800 字符时依次去掉标题、分类统计、截断备注、省略最浅的记录，并在 JSON 的 `trimmed` 字段和页面状态里注明；完整版仍可用「一键复制反馈 JSON」。本机记录是否已打开过提交页、之后是否有新记录。
+- `pipeline/feedback.py fetch` 用 GH_TOKEN 读取**仓库主人**的 `feedback:` issue，存到 `data/feedback/`（未跟踪）。`propose` 生成偏好调整建议（`prefs-proposed.json`，不生效）；只有用户同意后运行 `approve` 写出的 `prefs-approved.json` 才会被 `collect.py` 使用（分类分数 ±0.5 以内）。`weekly` 生成每周小结。

@@ -45,8 +45,8 @@ def page(issue,prefix):
 <div class="meta">共 {issue['count']} 条 · 按重要程度排序 · 中英韩多源汇编 · 生成于 {e(issue['generated_at'].replace('T',' '))}（UTC+9）</div>
 <nav><a href="{prefix}index.html">今天</a><a href="{prefix}archive/index.html">往期</a><a href="#fixed">固定关注</a><a href="#feedback">反馈汇总</a><span id="prog"></span></nav><div class="chips">{chips}</div></header>
 <main>{fixed_html}{settings}<h2 class="sec">今日 100 条</h2><p class="hint">点标题看摘要 · 再点「展开详细」或摘要看长文和原文链接 · 没点开的视为不感兴趣 · 📝 可选备注</p>{''.join(cards)}
-<section id="feedback"><h2>今日反馈汇总</h2><p id="fbcount"></p><p style="font-size:13px;color:var(--sub)">系统自动记录每条的阅读深度（0 未打开 / 1 看摘要 / 2 看详细）、是否点原文和备注，只保存在本机浏览器（localStorage）。复制下面的 JSON 发给简报员，我会据此调整明天的选题。</p>
-<button class="btn" id="copy">一键复制反馈 JSON</button> <button class="btn ghost" id="clear">清空</button><pre id="fbjson"></pre></section></main>
+<section id="feedback"><h2>今日反馈汇总</h2><p id="fbcount"></p><p style="font-size:13px;color:var(--sub)">系统自动记录每条的阅读深度（0 未打开 / 1 看摘要 / 2 看详细）、是否点原文和备注，只保存在本机浏览器（localStorage）。读完后点「提交反馈到 GitHub」，会打开预填好的 issue（只含打开过的条目、备注和统计），确认提交即可；也可以复制下面的 JSON 发给简报员。</p>
+<p id="fbstate" class="fbstate no">状态：未提交</p><div class="sprow"><button class="btn" id="submitfb" type="button">提交反馈到 GitHub ↗</button> <button class="btn ghost" id="copy">一键复制反馈 JSON</button> <button class="btn ghost" id="clear">清空</button></div><pre id="fbjson"></pre></section></main>
 <footer>摘要由简报员根据原文内容编写，请以原文为准。★ 表示重要程度；紫色左边框为「探索位」（你可能没关注过的方向）；蓝点=看过摘要，绿点=看过详细。</footer>
 <script src="{prefix}assets/app.js"></script></body></html>'''
 issues=sorted(glob.glob(f'{ROOT}/data/issue-*.json'))

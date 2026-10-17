@@ -4,6 +4,7 @@ set -euo pipefail
 D=${1:-$(TZ=Asia/Seoul date +%F)}
 cd "$(dirname "$0")/pipeline"
 PY=../.venv/bin/python
+$PY feedback.py fetch || echo "feedback fetch failed (continuing)"   # owner feedback issues -> data/feedback/ (private)
 $PY collect.py "$D" --hours 30        # feeds -> data/candidates-D.json (dedupe, cluster, score)
 $PY select_items.py "$D"              # quotas + explore pool, resolve links, fetch article text -> data/pack-D.json
 $PY fixed_topics.py "$D" --hours 72 --per-topic 10   # 固定关注: config issue (owner only) or config/fixed_topics.json -> data/fixed-pack-D.json

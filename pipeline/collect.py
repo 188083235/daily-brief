@@ -1,7 +1,7 @@
 """Step 1: fetch all rankable feeds from sources/channels.json, keep items from the last N hours,
 dedupe/cluster across sources, score, and write data/candidates-YYYY-MM-DD.json.
 Usage: python collect.py 2026-10-17 [--hours 30]"""
-import json,sys,re,time,html,datetime as dt,concurrent.futures as cf,argparse,collections
+import os,json,sys,re,time,html,datetime as dt,concurrent.futures as cf,argparse,collections
 import feedparser,requests
 from dateutil import parser as dp
 ap=argparse.ArgumentParser();ap.add_argument('date');ap.add_argument('--hours',type=int,default=30);a=ap.parse_args()
@@ -71,14 +71,18 @@ for i in uniq:
         if inter>=4 and inter/max(1,min(len(i['tokens']),len(h['tokens'])))>=0.5: cl.append(i); break
     else: clusters.append([i])
 CATW={'国际':1.3,'时政':1.1,'综合新闻':1.1,'财经':1.2,'AI':1.25,'科技':1.1,'科学':1.1,'健康':1.0,'气候环境':1.0,'韩国':1.15,'日本':1.0,'欧洲':1.0,'中东':1.1,'非洲':0.95,'体育':0.85,'军事':0.9,'网络安全':0.9,'技术博客':0.7,'历史/文化':0.7,'趣闻':0.6,'科技/数码':0.9,'时政/新闻':1.0}
+# reader preferences: only data/feedback/prefs-approved.json (written by `feedback.py approve` after the user OKs a proposal); clamped ±0.5
+_ap=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','data','feedback','prefs-approved.json')
+APPROVED={k:max(-0.5,min(0.5,float(v))) for k,v in (json.load(open(_ap)).get('category_delta',{}) if os.path.exists(_ap) else {}).items()}
 cands=[]
 for cl in clusters:
     head=max(cl,key=lambda x:(x['tier'],not x['gnews'],len(x['summary'])))
     srcs=sorted({x['source'] for x in cl})
     age=(end-dt.datetime.fromisoformat(head['published'])).total_seconds()/3600
     # modest boost for the user's own feeds (bookmarks / RSS / follows); category quotas in select_items keep breadth
+    pref_delta=APPROVED.get(head['category'],0)
     user_boost=0.6 if head.get('origin')=='user' else (0.3 if any(x.get('origin')=='user' for x in cl) else 0)
-    score=head['tier']*1.0+min(len(srcs),6)*0.8+max(0,1.5-age/20)+CATW.get(head['category'],0.8)+(0.3 if len(head['summary'])>200 else 0)+user_boost
+    score=head['tier']*1.0+min(len(srcs),6)*0.8+max(0,1.5-age/20)+CATW.get(head['category'],0.8)+(0.3 if len(head['summary'])>200 else 0)+user_boost+pref_delta
     cands.append(dict({k:v for k,v in head.items() if k!='tokens'},score=round(score,2),coverage=len(srcs),user_in_cluster=any(x.get('origin')=='user' for x in cl),also=[dict(source=x['source'],title=x['title'],link=x['link']) for x in cl if x is not head][:6]))
 cands.sort(key=lambda x:-x['score'])
 json.dump(dict(date=a.date,window=[start.isoformat(),end.isoformat()],feed_stats=stats,candidates=cands),open(f'../data/candidates-{a.date}.json','w'),ensure_ascii=False,indent=1)

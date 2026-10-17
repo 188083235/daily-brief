@@ -8,3 +8,4 @@ data/x-news-*.json
 data/fixed-pack-*.json
 data/fixed-config-*.json
 data/origin-stats-*.json
+data/feedback/

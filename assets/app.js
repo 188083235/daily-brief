@@ -33,13 +33,37 @@ function build(){
   sum.explore_opened=items.filter(x=>x.explore&&x.depth>0).length;
   return {date:D,exported_at:now(),schema:'depth: 0=未打开(不感兴趣) 1=看了摘要(感兴趣) 2=看了详细(很感兴趣)',summary:sum,by_category:bycat,items};
 }
-function render(){const j=build(),s=j.summary;
+let render=function(){const j=build(),s=j.summary;
   document.getElementById('fbjson').textContent=JSON.stringify(j,null,1);
   const t=`已读 ${s.interested+s.very_interested}/${s.total}（摘要 ${s.interested} · 详细 ${s.very_interested} · 点原文 ${s.link_clicked} · 备注 ${s.notes}）`;
   document.getElementById('fbcount').textContent=t; const p=document.getElementById('prog'); if(p)p.textContent=`已读 ${s.interested+s.very_interested}/${s.total}`;}
 document.getElementById('copy').addEventListener('click',async()=>{const t=document.getElementById('fbjson').textContent;
   try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}
   const b=document.getElementById('copy');b.textContent='已复制 ✓';setTimeout(()=>b.textContent='一键复制反馈 JSON',1500)});
+// ---- 提交反馈到 GitHub ----
+const SUBKEY='daily-brief:fb-submitted:'+D, MAXURL=7800, FB_BASE='https://github.com/188083235/daily-brief/issues/new?labels=feedback&title='+encodeURIComponent('feedback: '+D)+'&body=';
+function compact(){const j=build(),its=j.items.filter(x=>x.depth>0||x.note||x.link_clicked);
+  return {v:1,date:D,at:now(),schema:'d: 1=摘要 2=详细; l=点了原文; n=备注; 未列出的条目=未打开(depth 0)',summary:j.summary,
+    by_category:Object.fromEntries(Object.entries(j.by_category).map(([k,b])=>[k,[b.n,b.d1,b.d2]])),
+    items:its.map(x=>{const o={r:x.rank,id:x.id,c:x.category,d:x.depth,t:x.title.slice(0,40)};if(x.link_clicked)o.l=1;if(x.note)o.n=x.note;if(x.explore)o.e=1;return o;})};}
+const fbUrl=b=>FB_BASE+encodeURIComponent('请直接点「Submit new issue」提交，简报流水线会读取这条反馈。\n\n```json\n'+JSON.stringify(b)+'\n```\n');
+function payload(){const b=compact(),notes=[];let u=fbUrl(b);
+  if(u.length>MAXURL){b.items.forEach(o=>delete o.t);notes.push('去掉了标题');u=fbUrl(b);}
+  if(u.length>MAXURL){delete b.by_category;notes.push('去掉了分类统计');b.trimmed=notes.join('、');u=fbUrl(b);}
+  if(u.length>MAXURL){b.items.forEach(o=>{if(o.n&&o.n.length>120)o.n=o.n.slice(0,120)+'…'});notes.push('备注截断到120字');b.trimmed=notes.join('、');u=fbUrl(b);}
+  let dropped=0;while(u.length>MAXURL&&b.items.length){b.items.sort((a,c)=>(c.d+(c.n?2:0))-(a.d+(a.n?2:0)));b.items.pop();dropped++;b.trimmed=notes.concat('省略了 '+dropped+' 条最浅的记录（完整版请用复制按钮）').join('、');u=fbUrl(b);}
+  if(notes.length&&!b.trimmed)b.trimmed=notes.join('、');if(b.trimmed)u=fbUrl(b);
+  return {b,u,sig:JSON.stringify(b.items)+JSON.stringify(b.summary)};}
+function fbStatus(){const el=document.getElementById('fbstate');if(!el)return;let sub;try{sub=JSON.parse(localStorage.getItem(SUBKEY))}catch(e){}
+  const p=payload();el.className='fbstate';
+  if(!sub){el.textContent='状态：未提交';el.classList.add('no');}
+  else if(sub.sig!==p.sig){el.textContent='状态：'+new Date(sub.at).toLocaleString('zh-CN',{hour12:false})+' 打开过提交页，之后有新的阅读记录未提交';el.classList.add('chg');}
+  else {el.textContent='状态：已打开提交页 ✓（'+new Date(sub.at).toLocaleString('zh-CN',{hour12:false})+'，需在 GitHub 点 Submit 才算提交）';el.classList.add('ok');}
+  if(p.b.trimmed)el.textContent+=' · 内容较长，提交时'+p.b.trimmed;}
+const _r=render; render=function(){_r();fbStatus();};
+document.getElementById('submitfb').addEventListener('click',()=>{const p=payload();
+  localStorage.setItem(SUBKEY,JSON.stringify({at:now(),sig:p.sig,len:p.u.length}));document.body.dataset.lastFbUrl=p.u;
+  window.open(p.u,'_blank','noopener');fbStatus();});
 document.getElementById('clear').addEventListener('click',()=>{if(confirm('清空今天的全部阅读记录和备注？')){st={};save();location.reload()}});
 document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');const v=c.dataset.f;
   document.querySelectorAll('.item').forEach(el=>{el.style.display=(v==='all'||el.dataset.cat===v||(v==='探索位'&&el.dataset.exp==='1'))?'':'none'})}));
