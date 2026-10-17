@@ -44,3 +44,5 @@
 ## 每 6 小时更新
 - `./run_update.sh [--no-push]`：依次运行新闻采集（8 小时窗口）、social.py 和 `update.py`，生成 `updates/YYYY-MM-DD-HH.html`，只包含上次运行之后的新条目（标题和摘录均为原文，不做机器摘要），并更新 `updates/index.html` 和首页的「🕒 最新更新」链接。状态保存在 `data/updates-state.json`（私有）。
 - `tools/scheduler.sh`：在 00/06/12/18 点（UTC+9）运行 run_update.sh。用 `nohup tools/scheduler.sh >> /tmp/daily-brief-scheduler.log 2>&1 &` 启动；盒子重启后需要重新启动。
+- 中文标注：把 `{link:{t,s}}`（只依据抓到的原文写）存到 `data/updates/SLOT.zh.json`（私有），运行 `python3 tools/annotate_update.py SLOT`，页面显示中文标题/摘要，原题和原文摘录保留（摘录折叠）。
+- 2026-10-17 修复：scheduler 原来的 `date -d "today 00:00 +N hours"` 被当成时区偏移导致 sleep 为负、连轴重跑；现改为午夜时间戳 + N×3600。
