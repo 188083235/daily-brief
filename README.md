@@ -46,3 +46,4 @@
 - `tools/scheduler.sh`：在 00/06/12/18 点（UTC+9）运行 run_update.sh。用 `nohup tools/scheduler.sh >> /tmp/daily-brief-scheduler.log 2>&1 &` 启动；盒子重启后需要重新启动。
 - 中文标注：把 `{link:{t,s}}`（只依据抓到的原文写）存到 `data/updates/SLOT.zh.json`（私有），运行 `python3 tools/annotate_update.py SLOT`，页面显示中文标题/摘要，原题和原文摘录保留（摘录折叠）。
 - 2026-10-17 修复：scheduler 原来的 `date -d "today 00:00 +N hours"` 被当成时区偏移导致 sleep 为负、连轴重跑；现改为午夜时间戳 + N×3600。
+- 2026-10-18 修复：盒子休眠时单次长 sleep（单调时钟）会延后触发，00 点那次没跑；scheduler 改为每 60 秒检查一次墙钟时间，进入新时段（00/06/12/18）就运行一次。
