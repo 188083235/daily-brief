@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+# private: user's follow / RSS / bookmark data and anything derived from it
+sources/
+data/candidates-*.json
+data/pack-*.json
+data/x-news-*.json
