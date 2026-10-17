@@ -3,6 +3,8 @@
 cd "$(dirname "$0")/.."
 while true; do
   now=$(TZ=Asia/Seoul date +%s); h=$(TZ=Asia/Seoul date +%H); h=$((10#$h)); next=$(( (h/6+1)*6 ))
-  target=$(TZ=Asia/Seoul date -d "today 00:00 +$next hours" +%s); sleep $(( target-now+60 ))
+  mid=$(TZ=Asia/Seoul date -d "today 00:00" +%s); target=$(( mid + next*3600 ))
+  # (old "today 00:00 +N hours" was parsed as a UTC offset -> negative sleep -> back-to-back runs)
+  s=$(( target-now+60 )); [ "$s" -lt 60 ] && s=60; sleep "$s"
   echo "== $(TZ=Asia/Seoul date) run_update"; ./run_update.sh
 done
