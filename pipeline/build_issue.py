@@ -28,6 +28,33 @@ for rank,it in enumerate(order,1):
     items.append(dict(id=f"{date}-{rank:03d}",rank=rank,category=it['cat'],explore=bool(it.get('explore')),stars=stars,
         title_zh=it['t'],summary_zh=it['s'],why_zh=it['w'],detail_zh=detail,source=c['source'],orig_title=c['title'],
         link=c['link'],published=c['published'],language=c['language'],coverage=c.get('coverage',1),also=also[:5]))
-issue=dict(date=date,generated_at=dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat(timespec='minutes'),count=len(items),items=items)
+# ---- 固定关注 ----
+import os
+fixed=None
+fp=f'../data/fixed-pack-{date}.json'
+if os.path.exists(fp):
+    fpk=json.load(open(fp)); FX=getattr(ed,'FIXED',{}); byfid={c['fid']:c for c in fpk['items']}
+    topics=[]
+    for tp in fpk['topics']:
+        got=[c for c in fpk['items'] if c['topic']==tp['name']]; ent=FX.get(tp['name'])
+        items_out=[]
+        if ent:
+            for x in ent['items']:
+                c=byfid[x['fid']]; assert c['topic']==tp['name'] and len(c.get('article',''))>=200, f"fixed fid {x['fid']} not grounded"
+                also=[dict(source=byfid[m]['source'],title=byfid[m]['title'],link=byfid[m]['link']) for m in x.get('merge',[])]
+                items_out.append(dict(title_zh=x['t'],summary_zh=x['s'],source=c['source'],link=c['link'],orig_title=c['title'],published=c['published'],also=also))
+        note=(ent or {}).get('note') or ('过去72小时没有找到新的相关报道。' if not got else '')
+        if not got: note='过去72小时没有找到新的相关报道。'
+        topics.append(dict(name=tp['name'],keywords=tp['keywords'],note=note,items=items_out,found=len(got)))
+    fixed=dict(window=fpk['window'],config_source=fpk['config_source'],topics=topics)
+# ---- private: how many items came from the user's own feeds (never written to the public issue) ----
+try:
+    ch=json.load(open('../sources/channels.json'))['channels']; org={c['name']:('added' if c.get('source')=='supplement' else 'user') for c in ch}
+    import collections as _c
+    cnt=_c.Counter(org.get(pack[it['cid']]['channel'],pack[it['cid']].get('origin','?')) for it in ed.ITEMS)
+    json.dump(dict(date=date,main_items=dict(cnt)),open(f'../data/origin-stats-{date}.json','w'),ensure_ascii=False)
+    print('origin',dict(cnt))
+except FileNotFoundError: pass
+issue=dict(date=date,fixed=fixed,generated_at=dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat(timespec='minutes'),count=len(items),items=items)
 json.dump(issue,open(f'../data/issue-{date}.json','w'),ensure_ascii=False,indent=1)
 print(len(items),'items')

@@ -5,3 +5,6 @@ sources/
 data/candidates-*.json
 data/pack-*.json
 data/x-news-*.json
+data/fixed-pack-*.json
+data/fixed-config-*.json
+data/origin-stats-*.json

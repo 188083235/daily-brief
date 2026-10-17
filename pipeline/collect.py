@@ -43,7 +43,7 @@ def fetch(c):
             if m: title,src2=m.group(1).strip(),m.group(2).strip(); src=f"{src2}"
         out.append(dict(title=title,link=e.get('link'),published=d.isoformat() if d else None,
             summary=clean(e.get('summary') or e.get('description'))[:1500],source=src,channel=c['name'],
-            language=c['language'],category=c['category'],tier=tier(c['name']),gnews='news.google.com' in c['feed_url_if_known']))
+            language=c['language'],category=c['category'],tier=tier(c['name']),origin=('added' if c.get('source')=='supplement' else 'user'),gnews='news.google.com' in c['feed_url_if_known']))
     return c,out,None
 with cf.ThreadPoolExecutor(20) as ex: res=list(ex.map(fetch,feeds))
 items=[];stats={}
@@ -76,8 +76,10 @@ for cl in clusters:
     head=max(cl,key=lambda x:(x['tier'],not x['gnews'],len(x['summary'])))
     srcs=sorted({x['source'] for x in cl})
     age=(end-dt.datetime.fromisoformat(head['published'])).total_seconds()/3600
-    score=head['tier']*1.0+min(len(srcs),6)*0.8+max(0,1.5-age/20)+CATW.get(head['category'],0.8)+(0.3 if len(head['summary'])>200 else 0)
-    cands.append(dict({k:v for k,v in head.items() if k!='tokens'},score=round(score,2),coverage=len(srcs),also=[dict(source=x['source'],title=x['title'],link=x['link']) for x in cl if x is not head][:6]))
+    # modest boost for the user's own feeds (bookmarks / RSS / follows); category quotas in select_items keep breadth
+    user_boost=0.6 if head.get('origin')=='user' else (0.3 if any(x.get('origin')=='user' for x in cl) else 0)
+    score=head['tier']*1.0+min(len(srcs),6)*0.8+max(0,1.5-age/20)+CATW.get(head['category'],0.8)+(0.3 if len(head['summary'])>200 else 0)+user_boost
+    cands.append(dict({k:v for k,v in head.items() if k!='tokens'},score=round(score,2),coverage=len(srcs),user_in_cluster=any(x.get('origin')=='user' for x in cl),also=[dict(source=x['source'],title=x['title'],link=x['link']) for x in cl if x is not head][:6]))
 cands.sort(key=lambda x:-x['score'])
 json.dump(dict(date=a.date,window=[start.isoformat(),end.isoformat()],feed_stats=stats,candidates=cands),open(f'../data/candidates-{a.date}.json','w'),ensure_ascii=False,indent=1)
 print('feeds',len(feeds),'items',len(items),'uniq',len(uniq),'clusters',len(cands))

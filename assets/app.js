@@ -27,7 +27,7 @@ function build(){
     sum.total++; if(d===0)sum.unopened++; else if(d===1)sum.interested++; else sum.very_interested++;
     if(s.link_clicked)sum.link_clicked++; if(s.note)sum.notes++;
     const b=bycat[c]||(bycat[c]={n:0,d1:0,d2:0}); b.n++; if(d===1)b.d1++; if(d>=2)b.d2++;
-    const o={rank:+el.dataset.rank,id:el.dataset.id,title:el.querySelector('.t').textContent,category:c,source:el.dataset.src,explore:el.dataset.exp==='1',depth:d,link_clicked:!!s.link_clicked,note:s.note||''};
+    const o={rank:+el.dataset.rank,id:el.dataset.id,title:el.querySelector('.tt').textContent,category:c,source:el.dataset.src,explore:el.dataset.exp==='1',depth:d,link_clicked:!!s.link_clicked,note:s.note||''};
     if(s.t1)o.opened_at=s.t1; if(s.t2)o.detail_at=s.t2; if(s.tl)o.link_at=s.tl;
     items.push(o);});
   sum.explore_opened=items.filter(x=>x.explore&&x.depth>0).length;
@@ -44,4 +44,30 @@ document.getElementById('clear').addEventListener('click',()=>{if(confirm('清�
 document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');const v=c.dataset.f;
   document.querySelectorAll('.item').forEach(el=>{el.style.display=(v==='all'||el.dataset.cat===v||(v==='探索位'&&el.dataset.exp==='1'))?'':'none'})}));
 render();
+// ---- 固定关注设置 ----
+const CFGKEY='daily-brief:fixed-topics',REPO='188083235/daily-brief';
+const live=JSON.parse(document.getElementById('fixedcfg').textContent||'{"topics":[]}');
+let cfg;try{cfg=JSON.parse(localStorage.getItem(CFGKEY))}catch(e){} if(!cfg||!Array.isArray(cfg.topics))cfg=JSON.parse(JSON.stringify(live));
+const panel=document.getElementById('setpanel'),ul=document.getElementById('toplist'),stx=document.getElementById('cfgstate');
+const same=()=>JSON.stringify(cfg.topics)===JSON.stringify(live.topics);
+function draw(){ul.innerHTML='';cfg.topics.forEach((t,i)=>{const li=document.createElement('li');
+  const sp=document.createElement('span');sp.textContent=t.name+(t.keywords&&t.keywords.length?'  ['+t.keywords.join(' / ')+']':'');
+  const x=document.createElement('button');x.type='button';x.className='rm';x.textContent='✕';x.title='删除';x.onclick=()=>{cfg.topics.splice(i,1);store();};
+  li.append(sp,x);ul.append(li);});
+  stx.textContent=same()?'当前与已生效配置一致。':'本机有未提交的修改（已保存在本机），提交后下一期生效。';}
+function store(){localStorage.setItem(CFGKEY,JSON.stringify(cfg));draw();}
+function parseTopic(v){const parts=v.split(/[\/／|,，]/).map(x=>x.trim()).filter(Boolean);if(!parts.length)return null;return {name:v.trim().slice(0,40),keywords:parts.slice(0,6)};}
+document.getElementById('addtopic').onclick=()=>{const inp=document.getElementById('newtopic'),t=parseTopic(inp.value);if(!t)return;
+  if(cfg.topics.length>=12){alert('最多 12 个主题');return}cfg.topics.push(t);inp.value='';store();};
+document.getElementById('newtopic').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('addtopic').click()});
+document.getElementById('resetcfg').onclick=()=>{cfg=JSON.parse(JSON.stringify(live));localStorage.removeItem(CFGKEY);draw();};
+const open=()=>{panel.hidden=false;draw();panel.scrollIntoView({behavior:'smooth',block:'start'})};
+document.querySelectorAll('#openset,#navset').forEach(b=>b.addEventListener('click',open));
+document.getElementById('closeset').onclick=()=>{panel.hidden=true};
+document.getElementById('submitcfg').onclick=()=>{
+  const body={version:1,submitted_at:new Date().toISOString(),topics:cfg.topics};
+  const md='请直接点「Submit new issue」提交。下一次生成简报时，流水线会读取仓库主人提交的最新一条 `config: fixed-topics` issue。\n\n```json\n'+JSON.stringify(body,null,1)+'\n```\n';
+  const url='https://github.com/'+REPO+'/issues/new?labels=config&title='+encodeURIComponent('config: fixed-topics')+'&body='+encodeURIComponent(md);
+  localStorage.setItem(CFGKEY,JSON.stringify(cfg)); window.open(url,'_blank','noopener'); stx.textContent='已在新标签页打开预填 issue；确认提交后下一期生效。';
+  document.body.dataset.lastSubmitUrl=url;};
 })();
