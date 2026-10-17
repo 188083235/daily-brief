@@ -4,6 +4,7 @@ import json,sys,importlib.util,datetime as dt
 date=sys.argv[1]
 pack={c['cid']:c for c in json.load(open(f'../data/pack-{date}.json'))}
 sp=importlib.util.spec_from_file_location('ed',f'../editorial/{date}.py');ed=importlib.util.module_from_spec(sp);sp.loader.exec_module(ed)
+DET=getattr(ed,'DETAIL',{})
 main=[i for i in ed.ITEMS if not i.get('explore')];exp=[i for i in ed.ITEMS if i.get('explore')]
 order=[];ei=0
 for i,it in enumerate(main):
@@ -20,10 +21,12 @@ for rank,it in enumerate(order,1):
     for x in c.get('also',[])[:3]:
         if x['link'] and all(x['link']!=a['link'] for a in also) and 'news.google.com' not in x['link']: also.append(x)
     for n,u in it.get('x',[]): also.append(dict(source=n,title='X 上的相关讨论',link=u))
+    detail=it.get('detail') or DET.get(it['cid'])
+    assert detail and len(detail)>=100, f"cid {it['cid']} missing detail"
     stars=5 if rank<=10 else 4 if rank<=30 else 3 if rank<=60 else 2
     if it.get('explore'): stars=None
     items.append(dict(id=f"{date}-{rank:03d}",rank=rank,category=it['cat'],explore=bool(it.get('explore')),stars=stars,
-        title_zh=it['t'],summary_zh=it['s'],why_zh=it['w'],source=c['source'],orig_title=c['title'],
+        title_zh=it['t'],summary_zh=it['s'],why_zh=it['w'],detail_zh=detail,source=c['source'],orig_title=c['title'],
         link=c['link'],published=c['published'],language=c['language'],coverage=c.get('coverage',1),also=also[:5]))
 issue=dict(date=date,generated_at=dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat(timespec='minutes'),count=len(items),items=items)
 json.dump(issue,open(f'../data/issue-{date}.json','w'),ensure_ascii=False,indent=1)
