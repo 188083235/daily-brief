@@ -55,8 +55,27 @@ try:
     json.dump(dict(date=date,main_items=dict(cnt)),open(f'../data/origin-stats-{date}.json','w'),ensure_ascii=False)
     print('origin',dict(cnt))
 except FileNotFoundError: pass
+
+# ---- 我的关注 (user's own follows) ----
+follow=None;follow_items=[]
+fpp=f'../data/follow-pack-{date}.json'
+if os.path.exists(fpp) and getattr(ed,'FOLLOW',None):
+    fp=json.load(open(fpp));byf={x['fid']:x for x in fp['items']}
+    PLN={'youtube':'YouTube','bilibili':'B站','rss':'RSS','site':'网站','github':'GitHub','telegram':'Telegram','x':'X'}
+    for n,x in enumerate(ed.FOLLOW,1):
+        c=byf[x['fid']];assert len((c.get('title') or '')+(c.get('text') or ''))>=15, f"follow fid {x['fid']} has no text"
+        orig=(c.get('text') or '').strip()
+        detail=x.get('d') or (x['s']+('\n\n原文摘录：'+orig[:500] if orig else '\n\n（该条只有标题，没有更多正文。）'))
+        follow_items.append(dict(id=f"{date}-F{n:02d}",rank=100+n,rank_label=f"F{n}",category='我的关注',explore=False,stars=None,title_zh=x['t'],summary_zh=x['s'],
+            why_zh=x.get('w') or f"来自你关注的「{c['account']}」（{PLN.get(c['platform'],c['platform'])}）。",detail_zh=detail,source=f"{c['account']} · {PLN.get(c['platform'],c['platform'])}",
+            orig_title=c.get('title') or '',link=c['link'],published=c.get('time'),language='',coverage=1,also=[]))
+    stats={}
+    for k,v in fp['summary'].items():
+        ok=v.get('ok',0)
+        if ok: stats[PLN.get(k,k)]=stats.get(PLN.get(k,k),0)+ok
+    follow=dict(window=fp['window'],stats=stats,count=len(follow_items))
 import glob as _g
 _v=_g.glob(f'../data/versions/issue-{date}-v*.json')
-issue=dict(date=date,**(dict(store_key=f'{date}-v{len(_v)+1}',version_label=f' · 第{len(_v)+1}版') if _v else {}),fixed=fixed,generated_at=dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat(timespec='minutes'),count=len(items),items=items)
+issue=dict(date=date,**(dict(store_key=f'{date}-v{len(_v)+1}',version_label=f' · 第{len(_v)+1}版') if _v else {}),fixed=fixed,follow=follow,follow_items=follow_items,generated_at=dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat(timespec='minutes'),count=len(items),items=items)
 json.dump(issue,open(f'../data/issue-{date}.json','w'),ensure_ascii=False,indent=1)
 print(len(items),'items')

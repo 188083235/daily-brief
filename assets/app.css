@@ -53,3 +53,5 @@ details.ft{border-top:1px solid var(--line);padding:6px 0}details.ft summary{cur
 .pp.sub .btn#submitall{font-size:16px;padding:9px 18px}.lnk{background:none;border:none;color:var(--acc);cursor:pointer;padding:0;font:inherit;text-decoration:underline}
 details.json{margin-top:8px}details.json summary{cursor:pointer;color:var(--sub);font-size:13px}a.setb{text-decoration:none}
 #panel,#fixed{scroll-margin-top:150px}
+.upd h3{font-size:15px;margin:14px 0 4px;color:var(--sub)}.ui{overflow-wrap:anywhere;word-break:break-word;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:6px 0}
+.ui .ut{font-weight:600;color:var(--ink);text-decoration:none;line-height:1.45}.ui .um{font-size:12px;color:var(--sub);margin-top:2px}.ui p{font-size:14px;margin:4px 0 0;color:var(--ink);opacity:.85}

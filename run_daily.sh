@@ -7,9 +7,12 @@ PY=../.venv/bin/python
 $PY feedback.py fetch || echo "feedback fetch failed (continuing)"   # owner feedback issues -> data/feedback/ (private)
 $PY collect.py "$D" --hours 30        # feeds -> data/candidates-D.json (dedupe, cluster, score)
 $PY select_items.py "$D"              # quotas + explore pool, resolve links, fetch article text -> data/pack-D.json
+../tools/rsshub-local/start.sh || echo "local RSSHub unavailable"
+$PY social.py --per-account 5 || echo "social collect failed (continuing)"   # own follows -> data/social/ (private)
+$PY follow_pack.py "$D" --hours 30 || true   # -> data/follow-pack-D.json (private)
 $PY fixed_topics.py "$D" --hours 72 --per-topic 10   # 固定关注: config issue (owner only) or config/fixed_topics.json -> data/fixed-pack-D.json
 if [ ! -f "../editorial/$D.py" ]; then
-  echo "Editorial step: write editorial/$D.py (ITEMS/DETAIL per cid + FIXED per topic, grounded in pack/fixed-pack text only), then rerun."; exit 2; fi
+  echo "Editorial step: write editorial/$D.py (ITEMS/DETAIL per cid + FIXED per topic, FOLLOW per follow-pack fid, grounded in pack/fixed-pack text only), then rerun."; exit 2; fi
 $PY build_issue.py "$D"               # merge -> data/issue-D.json (asserts every item is grounded)
 $PY render.py                         # -> index.html, archive/D.html, archive/index.html
 echo "done: $D"

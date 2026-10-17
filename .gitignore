@@ -9,3 +9,8 @@ data/fixed-pack-*.json
 data/fixed-config-*.json
 data/origin-stats-*.json
 data/feedback/
+data/social/
+data/follow-pack-*.json
+data/update-news.json
+data/updates-state.json
+data/updates/

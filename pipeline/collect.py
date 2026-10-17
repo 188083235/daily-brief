@@ -4,7 +4,7 @@ Usage: python collect.py 2026-10-17 [--hours 30]"""
 import os,json,sys,re,time,html,datetime as dt,concurrent.futures as cf,argparse,collections
 import feedparser,requests
 from dateutil import parser as dp
-ap=argparse.ArgumentParser();ap.add_argument('date');ap.add_argument('--hours',type=int,default=30);ap.add_argument('--end',default='10:00',help="HH:MM KST on DATE, or 'now'");a=ap.parse_args()
+ap=argparse.ArgumentParser();ap.add_argument('date');ap.add_argument('--hours',type=int,default=30);ap.add_argument('--out',default=None,help='output path (default ../data/candidates-DATE.json)');ap.add_argument('--end',default='10:00',help="HH:MM KST on DATE, or 'now'");a=ap.parse_args()
 KST=dt.timezone(dt.timedelta(hours=9))
 end=(dt.datetime.now(KST).replace(second=0,microsecond=0) if a.end=='now' else dt.datetime.fromisoformat(a.date).replace(hour=int(a.end[:2]),minute=int(a.end[3:5]),tzinfo=KST))
 start=end-dt.timedelta(hours=a.hours)
@@ -85,6 +85,6 @@ for cl in clusters:
     score=head['tier']*1.0+min(len(srcs),6)*0.8+max(0,1.5-age/20)+CATW.get(head['category'],0.8)+(0.3 if len(head['summary'])>200 else 0)+user_boost+pref_delta
     cands.append(dict({k:v for k,v in head.items() if k!='tokens'},score=round(score,2),coverage=len(srcs),user_in_cluster=any(x.get('origin')=='user' for x in cl),also=[dict(source=x['source'],title=x['title'],link=x['link']) for x in cl if x is not head][:6]))
 cands.sort(key=lambda x:-x['score'])
-json.dump(dict(date=a.date,window=[start.isoformat(),end.isoformat()],feed_stats=stats,candidates=cands),open(f'../data/candidates-{a.date}.json','w'),ensure_ascii=False,indent=1)
+json.dump(dict(date=a.date,window=[start.isoformat(),end.isoformat()],feed_stats=stats,candidates=cands),open(a.out or f'../data/candidates-{a.date}.json','w'),ensure_ascii=False,indent=1)
 print('feeds',len(feeds),'items',len(items),'uniq',len(uniq),'clusters',len(cands))
 print(collections.Counter(c['category'] for c in cands[:300]).most_common())

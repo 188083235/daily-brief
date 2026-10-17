@@ -30,3 +30,17 @@
 页面底部「⚙ 设置与反馈」面板合并了固定关注设置和今日反馈，一个「提交到 GitHub ↗」按钮打开预填 issue `update: YYYY-MM-DD`，正文 JSON 为 `{"v":2,"type":"update","date":…,"feedback":{…},"fixed_topics":{"topics":[…]}}`（`fixed_topics` 仅在本机修改过时附带）。JSON 默认折叠（「查看 JSON」）。`fixed_topics.py` 与 `feedback.py` 同时兼容旧标题 `config: fixed-topics` / `feedback:`，都只接受仓库主人提交的 issue。
 
 同一天重新生成时，旧版本保存在 `data/versions/issue-DATE-vN.json` 并渲染为 `archive/DATE-vN.html`；`collect.py --end now` 可让窗口截止到当前时间。
+
+## 我的关注（自己的 RSS / 社交关注）
+- `pipeline/social.py`：读取私有的 `sources/channels.json`（不入库），抓取每个账号最新内容，写入 `data/social/`（gitignored）。
+  - RSS / 网站 / GitHub / Telegram / X（rss.app）：直接抓 feed；原 `rsshub.188083235.xyz` 路由先走本机 RSSHub，失败再回退到远程。
+  - YouTube：本机 RSSHub `/youtube/channel/<id>`，失败时用 yt-dlp 读频道列表。时间为近似值；最近 36 小时内的视频最多 30 条会用 yt-dlp 补简介和准确时间，一遇到 YouTube 的机器人验证就停止，不做绕过。
+  - B站：本机 RSSHub，按 12 秒间隔顺序抓取，连续 6 次错误就停止（遵守风控，不做绕过）。
+  - 抖音 / 头条 / 小红书：未接入，详见下文。
+- `pipeline/follow_pack.py DATE`：把时间窗口内的帖子打包成 `data/follow-pack-DATE.json`（私有）。编辑步骤在 `editorial/DATE.py` 里写 `FOLLOW=[{fid,t,s}]`，内容只能来自原文。生成的条目编号为 F1..Fn，显示在「👤 我的关注」区块。
+- 本机 RSSHub：`tools/rsshub-local/`，需要 node ≥ 22（`/home/box/opt/node22`）和 npm 包 `rsshub`；用 `start.sh` 启动，服务地址 127.0.0.1:1200。
+- 需要用户提供登录信息的平台（作为 RSSHub 环境变量传入，只保存在本机，不入库）：B站 `BILIBILI_COOKIE_<uid>`、小红书 `XIAOHONGSHU_COOKIE`（另需要主页 ID 或主页链接）、抖音 cookie。头条只有依赖反爬签名的抓取方式，因此不接入。
+
+## 每 6 小时更新
+- `./run_update.sh [--no-push]`：依次运行新闻采集（8 小时窗口）、social.py 和 `update.py`，生成 `updates/YYYY-MM-DD-HH.html`，只包含上次运行之后的新条目（标题和摘录均为原文，不做机器摘要），并更新 `updates/index.html` 和首页的「🕒 最新更新」链接。状态保存在 `data/updates-state.json`（私有）。
+- `tools/scheduler.sh`：在 00/06/12/18 点（UTC+9）运行 run_update.sh。用 `nohup tools/scheduler.sh >> /tmp/daily-brief-scheduler.log 2>&1 &` 启动；盒子重启后需要重新启动。
