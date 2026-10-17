@@ -30,14 +30,24 @@ def load_config():
             r=requests.get(f'https://api.github.com/repos/{REPO}/issues',params=dict(state='all',per_page=50,sort='created',direction='desc'),
                            headers={'Authorization':f'Bearer {tok}','Accept':'application/vnd.github+json'},timeout=15)
             for iss in r.json():
-                if not iss.get('title','').lower().startswith('config: fixed-topics'): continue
+                ttl=iss.get('title','').lower()
+                if 'pull_request' in iss or not (ttl.startswith('config: fixed-topics') or ttl.startswith('update:')): continue
                 if iss.get('user',{}).get('login')!=OWNER: continue        # only the owner may change config
                 m=re.search(r'\{.*\}',iss.get('body') or '',re.S)
                 if not m: continue
                 try: cfg=json.loads(m.group(0))
                 except Exception: continue
+                if ttl.startswith('update:'):          # combined issue: only counts if it carries fixed_topics
+                    if not isinstance(cfg.get('fixed_topics'),dict): continue
+                    cfg=cfg['fixed_topics']
                 tp=norm_topics(cfg.get('topics',[]))
-                if tp: return tp,f"issue #{iss['number']} ({iss['created_at']})"
+                if tp:
+                    try:   # keep repo-side search hints (context_zh) for topics that also exist in config/fixed_topics.json
+                        dflt={t['name']:t for t in norm_topics(json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','config','fixed_topics.json')))['topics'])}
+                        for t in tp:
+                            if not t.get('context_zh') and dflt.get(t['name'],{}).get('context_zh'): t['context_zh']=dflt[t['name']]['context_zh']
+                    except Exception: pass
+                    return tp,f"issue #{iss['number']} ({iss['created_at']})"
         except Exception as e: print('config issue lookup failed:',e)
     cfg=json.load(open('../config/fixed_topics.json'));return norm_topics(cfg['topics']),'config/fixed_topics.json'
 LOCAL={'당진':['https://www.djtimes.co.kr/rss/allArticle.xml']}   # local outlets with RSS, keyed by keyword
@@ -101,11 +111,12 @@ pack=[]
 for tp in topics:
     cands=[]
     for k in tp['keywords']:
-        if re.search(r'[\uac00-\ud7a3]',k): cands+=gnews(k,'ko','KR','KR:ko')+naver(k)
+        qk=f'"{k}"' if ' ' in k else k          # multi-word keywords are searched as exact phrases
+        if re.search(r'[\uac00-\ud7a3]',k): cands+=gnews(qk,'ko','KR','KR:ko')+naver(k)
         elif re.search(r'[\u4e00-\u9fff]',k):
-            q=k if not tp.get('context_zh') else f"{k} ({' OR '.join(tp['context_zh'])})"
+            q=qk if not tp.get('context_zh') else f"{qk} ({' OR '.join(tp['context_zh'])})"
             cands+=gnews(q,'zh-CN','CN','CN:zh-Hans')+gnews(q,'zh-TW','TW','TW:zh-Hant')
-        else: cands+=gnews(k,'en-US','US','US:en')
+        else: cands+=gnews(qk,'en-US','US','US:en')
         for u in LOCAL.get(k,[]): cands+=[c for c in local(u)]
     seen=set();pre=[]
     for c in cands:
@@ -129,7 +140,7 @@ for tp in topics:
         if not d or not (start<=d<=end+dt.timedelta(hours=1)): continue
         txt=c.get('article','')
         if len(txt)<200: continue
-        if not any(k.lower() in txt.lower() for k in tp['keywords']): continue   # fetched body must really mention the topic
+        if not any(re.search(re.escape(k.lower())+(r'(?![\d.])' if k[-1].isdigit() else ''),txt.lower()) for k in tp['keywords']): continue   # fetched body must really mention the topic ('iPad mini 8' must not match 'iPad mini 8.3-inch')   # fetched body must really mention the topic
         if re.search(r'security service to protect|Cloudflare Ray ID|新浪首页 新闻 体育',txt): continue   # bot walls / nav-only pages
         if '唐津' in tp['keywords'] and '唐津' in txt and not any(x in txt for x in ['당진','韩国','忠清','Dangjin']) and not any(k in txt for k in tp['keywords'] if k!='唐津'): continue  # avoid Karatsu (Japan)
         c['published']=d.isoformat();c['topic']=tp['name'];keep.append(c)

@@ -48,3 +48,8 @@ details.ft{border-top:1px solid var(--line);padding:6px 0}details.ft summary{cur
 .addrow{display:flex;gap:6px;margin:8px 0}.addrow input{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:7px 9px;font:inherit;background:var(--soft);color:var(--ink)}
 .sprow{display:flex;flex-wrap:wrap;gap:6px}
 .fbstate{font-size:13px;padding:4px 8px;border-radius:6px;display:inline-block}.fbstate.no{background:#fff4e5;color:#8a5300}.fbstate.chg{background:#fff4e5;color:#8a5300}.fbstate.ok{background:#e7f6ec;color:#17663a}
+#panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:16px 0}
+#panel h2{font-size:17px;margin:2px 0 6px}.pp{border-top:1px solid var(--line);padding:8px 0}.pp h3{font-size:15px;margin:0 0 4px}
+.pp.sub .btn#submitall{font-size:16px;padding:9px 18px}.lnk{background:none;border:none;color:var(--acc);cursor:pointer;padding:0;font:inherit;text-decoration:underline}
+details.json{margin-top:8px}details.json summary{cursor:pointer;color:var(--sub);font-size:13px}a.setb{text-decoration:none}
+#panel,#fixed{scroll-margin-top:150px}

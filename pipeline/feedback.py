@@ -1,6 +1,6 @@
 """Reader feedback store (private: data/feedback/ is gitignored).
 
-  python feedback.py fetch                 # pull owner-authored 'feedback: YYYY-MM-DD' issues via GH_TOKEN -> data/feedback/YYYY-MM-DD.json
+  python feedback.py fetch                 # pull owner-authored 'update: YYYY-MM-DD' (and legacy 'feedback:') issues via GH_TOKEN -> data/feedback/YYYY-MM-DD.json
   python feedback.py import FILE [--note T] # store a pasted export (full or compact JSON) -> data/feedback/DATE.json
   python feedback.py propose [--days 14]   # aggregate -> data/feedback/prefs-proposed.json (NOT applied to ranking)
   python feedback.py approve               # copy proposed -> prefs-approved.json; run ONLY after the user approves the proposal
@@ -15,6 +15,7 @@ os.makedirs(FB,exist_ok=True)
 
 def issue_meta(date):
     p=os.path.join(ROOT,'data',f'issue-{date}.json')
+    if not os.path.exists(p): p=os.path.join(ROOT,'data','versions',f'issue-{date}.json')
     if not os.path.exists(p): return {}
     return {str(it['id']):it for it in json.load(open(p))['items']}
 
@@ -44,12 +45,15 @@ def fetch():
                    headers={'Authorization':f'Bearer {tok}','Accept':'application/vnd.github+json'},timeout=20); r.raise_for_status()
     n=0
     for iss in r.json():   # oldest first, so the newest submission for a date wins
-        if 'pull_request' in iss or not iss.get('title','').lower().startswith('feedback:'): continue
+        ttl=iss.get('title','').lower()
+        if 'pull_request' in iss or not (ttl.startswith('feedback:') or ttl.startswith('update:')): continue
         if iss.get('user',{}).get('login')!=OWNER: continue          # only the owner's feedback counts
         m=re.search(r'\{.*\}',iss.get('body') or '',re.S)
         try: j=json.loads(m.group(0)) if m else None
         except Exception: j=None
-        if not j or not re.fullmatch(r'\d{4}-\d\d-\d\d',str(j.get('date',''))): print('skip unparsable issue',iss['number']); continue
+        if j and isinstance(j.get('feedback'),dict): j=dict(j['feedback'],date=j.get('date'))   # 'update:' issue (feedback + fixed_topics)
+        elif j and ttl.startswith('update:'): j=None
+        if not j or not re.fullmatch(r'\d{4}-\d\d-\d\d(-v\d+)?',str(j.get('date',''))): print('skip issue without feedback',iss['number']); continue
         print('saved',save(normalize(j,'github-issue',dict(issue=iss['number'],issue_created_at=iss['created_at'])))); n+=1
     print(f'{n} feedback issue(s) stored')
 

@@ -24,3 +24,9 @@
 
 - 页面底部「提交反馈到 GitHub ↗」打开预填 issue（标题 `feedback: YYYY-MM-DD`），正文为紧凑 JSON：只含打开过/点过原文/写了备注的条目、统计和分类计数。URL 超过约 7800 字符时依次去掉标题、分类统计、截断备注、省略最浅的记录，并在 JSON 的 `trimmed` 字段和页面状态里注明；完整版仍可用「一键复制反馈 JSON」。本机记录是否已打开过提交页、之后是否有新记录。
 - `pipeline/feedback.py fetch` 用 GH_TOKEN 读取**仓库主人**的 `feedback:` issue，存到 `data/feedback/`（未跟踪）。`propose` 生成偏好调整建议（`prefs-proposed.json`，不生效）；只有用户同意后运行 `approve` 写出的 `prefs-approved.json` 才会被 `collect.py` 使用（分类分数 ±0.5 以内）。`weekly` 生成每周小结。
+
+## 设置与反馈（合并提交）
+
+页面底部「⚙ 设置与反馈」面板合并了固定关注设置和今日反馈，一个「提交到 GitHub ↗」按钮打开预填 issue `update: YYYY-MM-DD`，正文 JSON 为 `{"v":2,"type":"update","date":…,"feedback":{…},"fixed_topics":{"topics":[…]}}`（`fixed_topics` 仅在本机修改过时附带）。JSON 默认折叠（「查看 JSON」）。`fixed_topics.py` 与 `feedback.py` 同时兼容旧标题 `config: fixed-topics` / `feedback:`，都只接受仓库主人提交的 issue。
+
+同一天重新生成时，旧版本保存在 `data/versions/issue-DATE-vN.json` 并渲染为 `archive/DATE-vN.html`；`collect.py --end now` 可让窗口截止到当前时间。

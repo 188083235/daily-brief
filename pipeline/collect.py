@@ -4,9 +4,9 @@ Usage: python collect.py 2026-10-17 [--hours 30]"""
 import os,json,sys,re,time,html,datetime as dt,concurrent.futures as cf,argparse,collections
 import feedparser,requests
 from dateutil import parser as dp
-ap=argparse.ArgumentParser();ap.add_argument('date');ap.add_argument('--hours',type=int,default=30);a=ap.parse_args()
+ap=argparse.ArgumentParser();ap.add_argument('date');ap.add_argument('--hours',type=int,default=30);ap.add_argument('--end',default='10:00',help="HH:MM KST on DATE, or 'now'");a=ap.parse_args()
 KST=dt.timezone(dt.timedelta(hours=9))
-end=dt.datetime.fromisoformat(a.date).replace(hour=10,tzinfo=KST)
+end=(dt.datetime.now(KST).replace(second=0,microsecond=0) if a.end=='now' else dt.datetime.fromisoformat(a.date).replace(hour=int(a.end[:2]),minute=int(a.end[3:5]),tzinfo=KST))
 start=end-dt.timedelta(hours=a.hours)
 ch=json.load(open('../sources/channels.json'))['channels']
 SKIP_CAT={'软件','影视','软件更新','影视/娱乐','游戏/电竞','生活/兴趣','热榜'}

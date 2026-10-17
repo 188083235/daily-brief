@@ -2,7 +2,33 @@
  "version": 1,
  "note": "固定关注主题。网页上「固定关注设置」提交的 GitHub issue（标题 config: fixed-topics，作者为仓库主人）优先于本文件。",
  "topics": [
-  {"name": "丹东", "keywords": ["丹东", "Dandong", "단둥"]},
-  {"name": "당진/唐津", "keywords": ["당진", "Dangjin", "唐津"], "context_zh": ["韩国", "忠清"]}
+  {
+   "name": "丹东",
+   "keywords": [
+    "丹东",
+    "Dandong",
+    "단둥"
+   ]
+  },
+  {
+   "name": "당진/唐津",
+   "keywords": [
+    "당진",
+    "Dangjin",
+    "唐津"
+   ],
+   "context_zh": [
+    "韩国",
+    "忠清"
+   ]
+  },
+  {
+   "name": "iPad mini 8",
+   "keywords": [
+    "iPad mini 8",
+    "아이패드 미니 8",
+    "iPad mini 8代"
+   ]
+  }
  ]
 }

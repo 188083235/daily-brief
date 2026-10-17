@@ -33,15 +33,15 @@ import os
 fixed=None
 fp=f'../data/fixed-pack-{date}.json'
 if os.path.exists(fp):
-    fpk=json.load(open(fp)); FX=getattr(ed,'FIXED',{}); byfid={c['fid']:c for c in fpk['items']}
+    fpk=json.load(open(fp)); FX=getattr(ed,'FIXED',{}); byfid={str(c['fid']):c for c in fpk['items']}
     topics=[]
     for tp in fpk['topics']:
         got=[c for c in fpk['items'] if c['topic']==tp['name']]; ent=FX.get(tp['name'])
         items_out=[]
         if ent:
             for x in ent['items']:
-                c=byfid[x['fid']]; assert c['topic']==tp['name'] and len(c.get('article',''))>=200, f"fixed fid {x['fid']} not grounded"
-                also=[dict(source=byfid[m]['source'],title=byfid[m]['title'],link=byfid[m]['link']) for m in x.get('merge',[])]
+                c=byfid[str(x['fid'])]; assert c['topic']==tp['name'] and len(c.get('article',''))>=200, f"fixed fid {x['fid']} not grounded"
+                also=[dict(source=byfid[str(m)]['source'],title=byfid[str(m)]['title'],link=byfid[str(m)]['link']) for m in x.get('merge',[])]
                 items_out.append(dict(title_zh=x['t'],summary_zh=x['s'],source=c['source'],link=c['link'],orig_title=c['title'],published=c['published'],also=also))
         note=(ent or {}).get('note') or ('过去72小时没有找到新的相关报道。' if not got else '')
         if not got: note='过去72小时没有找到新的相关报道。'
@@ -55,6 +55,8 @@ try:
     json.dump(dict(date=date,main_items=dict(cnt)),open(f'../data/origin-stats-{date}.json','w'),ensure_ascii=False)
     print('origin',dict(cnt))
 except FileNotFoundError: pass
-issue=dict(date=date,fixed=fixed,generated_at=dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat(timespec='minutes'),count=len(items),items=items)
+import glob as _g
+_v=_g.glob(f'../data/versions/issue-{date}-v*.json')
+issue=dict(date=date,**(dict(store_key=f'{date}-v{len(_v)+1}',version_label=f' · 第{len(_v)+1}版') if _v else {}),fixed=fixed,generated_at=dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat(timespec='minutes'),count=len(items),items=items)
 json.dump(issue,open(f'../data/issue-{date}.json','w'),ensure_ascii=False,indent=1)
 print(len(items),'items')
