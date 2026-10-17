@@ -1,6 +1,7 @@
 """Reader feedback store (private: data/feedback/ is gitignored).
 
   python feedback.py fetch                 # pull owner-authored 'update: YYYY-MM-DD' (and legacy 'feedback:') issues via GH_TOKEN -> data/feedback/YYYY-MM-DD.json
+                                           # 'update: YYYY-MM-DD-HH' (6-hourly update pages) -> data/feedback/updates/SLOT.json
   python feedback.py import FILE [--note T] # store a pasted export (full or compact JSON) -> data/feedback/DATE.json
   python feedback.py propose [--days 14]   # aggregate -> data/feedback/prefs-proposed.json (NOT applied to ranking)
   python feedback.py approve               # copy proposed -> prefs-approved.json; run ONLY after the user approves the proposal
@@ -38,6 +39,29 @@ def normalize(j,origin,extra=None):
 def save(rec):
     p=os.path.join(FB,f"{rec['date']}.json");json.dump(rec,open(p,'w'),ensure_ascii=False,indent=1);return p
 
+def update_page_items(slot):
+    """id -> {link,title,category} parsed from the public updates/SLOT.html (ids are assigned in page order)."""
+    p=os.path.join(ROOT,'updates',f'{slot}.html')
+    if not os.path.exists(p): return {}
+    import html as H;out={}
+    for m in re.finditer(r'<div class="ui" data-id="([^"]+)" data-cat="([^"]*)"><a class="ut" href="([^"]*)"[^>]*>(.*?)</a>',open(p).read(),re.S):
+        out[m.group(1)]=dict(link=H.unescape(m.group(3)),category=H.unescape(m.group(2)),title=H.unescape(re.sub(r'<[^>]+>','',m.group(4))))
+    return out
+
+def save_update(j,extra):
+    """Feedback from a 6-hourly update page -> data/feedback/updates/SLOT.json (kept apart from the daily records used by propose)."""
+    slot=j['date'];meta=update_page_items(slot);items=[]
+    for o in j.get('items',[]):
+        x=dict(rank=o.get('r',o.get('rank')),id=str(o.get('id')),category=o.get('c',o.get('category')),depth=o.get('d',o.get('depth',0)),
+               link_clicked=bool(o.get('l',o.get('link_clicked'))),note=o.get('n',o.get('note','')),title=o.get('t',o.get('title','')))
+        m=meta.get(x['id'])
+        if m: x['title']=m['title'] or x['title'];x['category']=x['category'] or m['category'];x['link']=m['link']
+        if x['depth'] or x['note'] or x['link_clicked']: items.append(x)
+    rec=dict(slot=slot,date=slot[:10],page='update',origin='github-issue',saved_at=dt.datetime.now(KST).isoformat(timespec='seconds'),
+             summary=j.get('summary'),trimmed=j.get('trimmed'),items=sorted(items,key=lambda x:x['rank'] or 999),**extra)
+    d=os.path.join(FB,'updates');os.makedirs(d,exist_ok=True);p=os.path.join(d,f'{slot}.json')
+    json.dump(rec,open(p,'w'),ensure_ascii=False,indent=1);return p
+
 def fetch():
     tok=os.environ.get('GH_TOKEN')
     if not tok: sys.exit('GH_TOKEN not set')
@@ -53,6 +77,8 @@ def fetch():
         except Exception: j=None
         if j and isinstance(j.get('feedback'),dict): j=dict(j['feedback'],date=j.get('date'))   # 'update:' issue (feedback + fixed_topics)
         elif j and ttl.startswith('update:'): j=None
+        if j and re.fullmatch(r'\d{4}-\d\d-\d\d-\d\d',str(j.get('date',''))):   # 6-hourly update page: 'update: YYYY-MM-DD-HH'
+            print('saved',save_update(j,dict(issue=iss['number'],issue_created_at=iss['created_at']))); n+=1; continue
         if not j or not re.fullmatch(r'\d{4}-\d\d-\d\d(-v\d+)?',str(j.get('date',''))): print('skip issue without feedback',iss['number']); continue
         print('saved',save(normalize(j,'github-issue',dict(issue=iss['number'],issue_created_at=iss['created_at'])))); n+=1
     print(f'{n} feedback issue(s) stored')
@@ -98,6 +124,10 @@ def weekly(end=None):
         s=r.get('summary') or {};L.append(f"- {r['date']}（{r['origin']}{'，issue #'+str(r['issue']) if r.get('issue') else ''}）：打开 {len([x for x in r['items'] if x['depth']>=1])} 条，看详细 {len([x for x in r['items'] if x['depth']>=2])} 条，备注 {len([x for x in r['items'] if x['note']])} 条"+(f"；提交时{r['trimmed']}" if r.get('trimmed') else ''))
     L+=['','## 分类','| 分类 | 展示 | 打开 | 详细 |','|---|---|---|---|']+[f'| {c} | {shown[c]} | {opened[c]} | {deep[c]} |' for c in sorted(shown,key=lambda c:-(opened[c]+deep[c]))]
     L+=['','## 看过的条目']+[f"- {r['date']} #{x['rank']} [{x['category']}] {x['title']}（深度 {x['depth']}{'，点了原文' if x['link_clicked'] else ''}）"+(f"\n  - 备注：{x['note']}" if x['note'] else '') for r in recs for x in r['items']]
+    lo=(dt.date.fromisoformat(end)-dt.timedelta(days=6)).isoformat()
+    ups=[json.load(open(q)) for q in sorted(glob.glob(os.path.join(FB,'updates','20??-??-??-??.json')))]
+    ups=[u for u in ups if lo<=u['date']<=end]
+    if ups: L+=['','## 6小时更新页的反馈']+[f"- {u['slot']} [{x['category']}] {x['title']}（深度 {x['depth']}{'，点了原文' if x['link_clicked'] else ''}）"+(f"\n  - 备注：{x['note']}" if x['note'] else '') for u in ups for x in u['items']]
     p=os.path.join(FB,f'weekly-{end}.md');open(p,'w').write('\n'.join(L)+'\n');print('\n'.join(L));print('->',p)
 
 if __name__=='__main__':

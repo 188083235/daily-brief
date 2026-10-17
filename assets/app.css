@@ -55,3 +55,8 @@ details.json{margin-top:8px}details.json summary{cursor:pointer;color:var(--sub)
 #panel,#fixed{scroll-margin-top:150px}
 .upd h3{font-size:15px;margin:14px 0 4px;color:var(--sub)}.ui{overflow-wrap:anywhere;word-break:break-word;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:6px 0}
 .ui .ut{font-weight:600;color:var(--ink);text-decoration:none;line-height:1.45}.ui .um{font-size:12px;color:var(--sub);margin-top:2px}.ui p{font-size:14px;margin:4px 0 0;color:var(--ink);opacity:.85}
+.fab{position:fixed;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:20;background:var(--acc);color:#fff;border:0;border-radius:999px;padding:10px 16px;font-size:15px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer;transition:opacity .2s,transform .2s}
+.fab.done{background:var(--d2)}.fab.hide{opacity:0;transform:translateY(20px);pointer-events:none}.fabn{font-weight:400;font-size:13px}
+footer,main{padding-bottom:72px}
+.ui{position:relative}.ui>.noteb{float:right;margin:-2px -6px 0 4px}.ui textarea.note{width:100%;margin:8px 0 2px}
+.item[data-depth="1"]:not(.ui),.ui[data-depth="1"]{border-color:var(--d1)}.ui[data-depth="2"]{border-color:var(--d2)}

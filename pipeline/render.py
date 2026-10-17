@@ -58,13 +58,13 @@ def page(issue,prefix):
 <div class="sprow"><button class="btn ghost" id="copy" type="button">复制完整 JSON</button> <button class="btn ghost" id="clear" type="button">清空今日记录</button></div>
 <details class="json"><summary>查看 JSON</summary><pre id="fbjson"></pre></details></div></section>'''
     return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>每日简报 {d}</title>
-<link rel="stylesheet" href="{prefix}assets/app.css"></head><body data-date="{d}" data-key="{e(issue.get('store_key',d))}"><header><h1>每日简报 · {issue.get('base_date',d)}（周{w}）{vlab}</h1>
+<link rel="stylesheet" href="{prefix}assets/app.css?v=20261018a"></head><body data-date="{d}" data-key="{e(issue.get('store_key',d))}"><header><h1>每日简报 · {issue.get('base_date',d)}（周{w}）{vlab}</h1>
 <div class="meta">共 {issue['count']} 条 · 按重要程度排序 · 中英韩多源汇编 · 生成于 {e(issue['generated_at'].replace('T',' '))}（UTC+9）</div>
 <nav><a href="{prefix}index.html">今天</a><a href="{prefix}archive/index.html">往期</a><a href="#fixed">固定关注</a><a href="#follow">我的关注</a><a class="opensp" href="#panel">⚙ 设置/反馈</a>{updl}<span id="prog"></span></nav><div class="chips">{chips}</div></header>
 <main>{fixed_html}{follow_html}{settings}<h2 class="sec">今日 100 条</h2><p class="hint">点标题看摘要 · 再点「展开详细」或摘要看长文和原文链接 · 没点开的视为不感兴趣 · 📝 可选备注</p>{''.join(cards)}
 {panel}</main>
 <footer>摘要由简报员根据原文内容编写，请以原文为准。★ 表示重要程度；紫色左边框为「探索位」（你可能没关注过的方向）；蓝点=看过摘要，绿点=看过详细。</footer>
-<script src="{prefix}assets/app.js"></script></body></html>'''
+<script src="{prefix}assets/app.js?v=20261018a"></script></body></html>'''
 issues=sorted(glob.glob(f'{ROOT}/data/issue-*.json'))
 allis=[json.load(open(p)) for p in issues]
 for iss in allis:
@@ -74,7 +74,7 @@ for iss in vers: open(f"{SITE}/archive/{iss['date']}.html",'w').write(page(iss,'
 latest=allis[-1]
 open(f'{SITE}/index.html','w').write(page(latest,''))
 rows=''.join(f'<a href="{i["date"]}.html"><b>{i.get("base_date",i["date"])}{e(i.get("version_label",""))}</b> · {i["count"]} 条 · 头条：{e(i["items"][0]["title_zh"])}</a>' for i in sorted(allis+vers,key=lambda i:(i.get('base_date',i['date']),'base_date' not in i),reverse=True))
-open(f'{SITE}/archive/index.html','w').write(f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>每日简报 · 往期</title><link rel="stylesheet" href="../assets/app.css"></head>
+open(f'{SITE}/archive/index.html','w').write(f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>每日简报 · 往期</title><link rel="stylesheet" href="../assets/app.css?v=20261018a"></head>
 <body><header><h1>每日简报 · 往期</h1><nav><a href="../index.html">今天</a></nav></header><main class="arch">{rows}</main></body></html>''')
 open(f'{SITE}/.nojekyll','w').write('')
 print('rendered',len(allis),'issue(s); latest',latest['date'])

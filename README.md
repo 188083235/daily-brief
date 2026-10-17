@@ -28,6 +28,7 @@
 ## 设置与反馈（合并提交）
 
 页面底部「⚙ 设置与反馈」面板合并了固定关注设置和今日反馈，一个「提交到 GitHub ↗」按钮打开预填 issue `update: YYYY-MM-DD`，正文 JSON 为 `{"v":2,"type":"update","date":…,"feedback":{…},"fixed_topics":{"topics":[…]}}`（`fixed_topics` 仅在本机修改过时附带）。JSON 默认折叠（「查看 JSON」）。`fixed_topics.py` 与 `feedback.py` 同时兼容旧标题 `config: fixed-topics` / `feedback:`，都只接受仓库主人提交的 issue。
+每个页面（日报、往期、6 小时更新页）右下角都有悬浮的「📤 提交反馈」按钮（滚到底部面板时自动隐藏），手机上不用翻到页底。6 小时更新页也带同样的面板（`pipeline/panel.py`，`update.py` 生成时自动加入；旧页面可用 `python3 pipeline/panel.py` 补上），提交的 issue 标题为 `update: YYYY-MM-DD-HH`：展开「原文摘录」= 深度 1，点原文 = 深度 2。`feedback.py fetch` 把它存到 `data/feedback/updates/SLOT.json`（私有，按页面里的 data-id 对回原文链接），只进每周报告，不参与 `propose` 的分类权重计算。
 
 同一天重新生成时，旧版本保存在 `data/versions/issue-DATE-vN.json` 并渲染为 `archive/DATE-vN.html`；`collect.py --end now` 可让窗口截止到当前时间。
 

@@ -41,14 +41,15 @@ grp=collections.defaultdict(list)
 for x in soc: grp[x['platform']].append(x)
 soc_html=''.join(f'<h3>{PL.get(k,k)}（{len(v)}）</h3>'+''.join(card(x) for x in v) for k,v in sorted(grp.items(),key=lambda kv:-len(kv[1]))) or '<p class="hint">这段时间关注的账号没有新内容。</p>'
 news_html=''.join(card(x) for x in news) or '<p class="hint">没有新的新闻。</p>'
-page=f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>最新更新 {slot}</title><link rel="stylesheet" href="../assets/app.css"></head>
+page=f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>最新更新 {slot}</title><link rel="stylesheet" href="../assets/app.css?v=20261018a"></head>
 <body><header><h1>最新更新 · {NOW:%Y-%m-%d %H:%M}（UTC+9）</h1><div class="meta">自 {since:%m-%d %H:%M} 以来的新内容 · 关注 {len(soc)} 条 · 新闻 {len(news)} 条 · 标题和摘录均为原文</div>
 <nav><a href="../index.html">今日简报</a><a href="index.html">更新列表</a><a href="#follow">我的关注</a><a href="#news">新闻</a></nav></header>
 <main class="upd"><section id="follow"><h2>我的关注</h2>{soc_html}</section><section id="news"><h2>新闻（按重要程度）</h2>{news_html}</section></main></body></html>'''
 open(os.path.join(ROOT,'updates',slot+'.html'),'w').write(page)
+import sys;sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)));import panel;panel.retrofit(os.path.join(ROOT,'updates',slot+'.html'))   # feedback/fixed-topics panel + app.js
 st['runs']=([dict(slot=slot,follow=len(soc),news=len(news))]+[r for r in st.get('runs',[]) if r['slot']!=slot])[:200]
 rows=''.join(f'<a href="{r["slot"]}.html"><b>{r["slot"][:10]} {r["slot"][11:]}:00</b> · 关注 {r["follow"]} 条 · 新闻 {r["news"]} 条</a>' for r in st['runs'])
-open(os.path.join(ROOT,'updates','index.html'),'w').write(f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>最新更新</title><link rel="stylesheet" href="../assets/app.css"></head>
+open(os.path.join(ROOT,'updates','index.html'),'w').write(f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>最新更新</title><link rel="stylesheet" href="../assets/app.css?v=20261018a"></head>
 <body><header><h1>最新更新（每6小时）</h1><nav><a href="../index.html">今日简报</a></nav></header><main class="arch">{rows}</main></body></html>''')
 st['seen']=list((seen|{x['link'] for x in news+soc}))[-20000:];st['last']=NOW.isoformat(timespec='minutes')
 json.dump(st,open(SP,'w'),ensure_ascii=False)
