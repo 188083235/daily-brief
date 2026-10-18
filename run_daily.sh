@@ -4,6 +4,9 @@ set -euo pipefail
 D=${1:-$(TZ=Asia/Seoul date +%F)}
 cd "$(dirname "$0")/pipeline"
 PY=../.venv/bin/python
+# Second pass (editorial already written): don't re-collect, or cids/fids in the packs would change under the editorial.
+if [ -f "../editorial/$D.py" ] && [ -f "../data/pack-$D.json" ] && [ "${FORCE_COLLECT:-0}" != 1 ]; then
+  $PY build_issue.py "$D" && $PY render.py && echo "done: $D (build only)"; exit $?; fi
 $PY feedback.py fetch || echo "feedback fetch failed (continuing)"   # owner feedback issues -> data/feedback/ (private)
 $PY collect.py "$D" --hours 30        # feeds -> data/candidates-D.json (dedupe, cluster, score)
 $PY select_items.py "$D"              # quotas + explore pool, resolve links, fetch article text -> data/pack-D.json
