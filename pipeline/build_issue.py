@@ -5,11 +5,16 @@ date=sys.argv[1]
 pack={c['cid']:c for c in json.load(open(f'../data/pack-{date}.json'))}
 sp=importlib.util.spec_from_file_location('ed',f'../editorial/{date}.py');ed=importlib.util.module_from_spec(sp);sp.loader.exec_module(ed)
 DET=getattr(ed,'DETAIL',{})
+CFG=json.load(open('../config/brief.json'))   # daily total (50) and exploration slots (7)
+NT,NE,EVERY=CFG['total'],CFG['explore'],CFG.get('explore_every',7)
 main=[i for i in ed.ITEMS if not i.get('explore')];exp=[i for i in ed.ITEMS if i.get('explore')]
+main.sort(key=lambda i:-i.get('imp',5));exp.sort(key=lambda i:-i.get('imp',5))   # stable: keeps editorial order on ties
+exp=exp[:NE];main=main[:NT-len(exp)]   # cap to the configured daily total
+if len(main)+len(exp)!=NT: print(f"warning: {len(main)+len(exp)} items (target {NT})")
 order=[];ei=0
 for i,it in enumerate(main):
     order.append(it)
-    if (len(order)+1)%10==0 and ei<len(exp): order.append(exp[ei]);ei+=1
+    if (len(order)+1)%EVERY==0 and ei<len(exp): order.append(exp[ei]);ei+=1
 order+=exp[ei:]
 items=[]
 for rank,it in enumerate(order,1):
@@ -23,7 +28,7 @@ for rank,it in enumerate(order,1):
     for n,u in it.get('x',[]): also.append(dict(source=n,title='X 上的相关讨论',link=u))
     detail=it.get('detail') or DET.get(it['cid'])
     assert detail and len(detail)>=100, f"cid {it['cid']} missing detail"
-    stars=5 if rank<=10 else 4 if rank<=30 else 3 if rank<=60 else 2
+    f=NT/100; stars=5 if rank<=10*f else 4 if rank<=30*f else 3 if rank<=60*f else 2
     if it.get('explore'): stars=None
     items.append(dict(id=f"{date}-{rank:03d}",rank=rank,category=it['cat'],explore=bool(it.get('explore')),stars=stars,
         title_zh=it['t'],summary_zh=it['s'],why_zh=it['w'],detail_zh=detail,source=c['source'],orig_title=c['title'],
